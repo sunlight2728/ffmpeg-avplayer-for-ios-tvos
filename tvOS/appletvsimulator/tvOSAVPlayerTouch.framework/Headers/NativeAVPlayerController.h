@@ -12,6 +12,10 @@
 #import <UIKit/UIKit.h>
 #import <AVFoundation/AVFoundation.h>
 
+NS_ASSUME_NONNULL_BEGIN
+
+@class FFAVSubtitleItem;
+
 @protocol NativeAVPlayerControllerDelegate;
 
 @interface NativeAVPlayerController : NSObject
@@ -21,7 +25,7 @@
  * the delegate of NativeAVPlayerController interface.
  * monitor states change of the player.
  */
-@property(nonatomic, weak) id <NativeAVPlayerControllerDelegate> delegate;
+@property(nullable, nonatomic, weak) id <NativeAVPlayerControllerDelegate> delegate;
 
 /*
  * the URL of av resource, now supports file, http and smb protocols.
@@ -90,12 +94,12 @@
  * The drawable view object.
  * user can put it in anywhere.
  */
-@property(nonatomic, retain, readonly) UIView *drawableView;
+@property(nullable, nonatomic, retain, readonly) UIView *drawableView;
 
 /*
  * Query the title of av resource.
  */
-@property(nonatomic, retain, readonly) NSString *title;
+@property(nullable, nonatomic, retain, readonly) NSString *title;
 
 /*
  * Query media total duration in seconds.
@@ -143,7 +147,7 @@
 /*
  * Audio track list, a NSDictionary object list.
  */
-@property (nonatomic, readonly) NSArray *audioTracks;
+@property (nullable, nonatomic, readonly) NSArray *audioTracks;
 
 /*
  * Toggle built-in subtitle render, default YES.
@@ -158,7 +162,7 @@
  * @options: HTTP(s) customized headers, user can pass customized http headers via AVOptionNameHttpHeader option key.
  * YES - success; NO - failure.
  */
-- (BOOL)openMedia:(NSURL *)url options:(NSDictionary *)options;
+- (BOOL)openMedia:(NSURL *)url options:(nullable NSDictionary *)options;
 
 /*
  * Control methods
@@ -174,11 +178,15 @@
 - (void)switchAudioTracker:(int)index;
 
 /*
- * Open or close external subtitle file support.
+ * Open external subtitle file.
  * @path: subtitle file path.
- * @encoding: encoding of the file.
+ * @return: YES for success, NO for failure.
  */
-- (BOOL)openSubtitleFile:(NSString *)path encoding:(CFStringEncoding)encoding;
+- (BOOL)openSubtitleFile:(NSString *)path;
+
+/*
+ * Close the current external subtitle.
+ */
 - (void)closeSubtitleFile;
 
 /*
@@ -217,6 +225,12 @@
 // current play time was changed
 - (void)NativeAVPlayerControllerDidCurTimeChange:(NativeAVPlayerController *)controller position:(NSTimeInterval)position;
 
+// query subtitle's encoding
+- (CFStringEncoding)NativeAVPlayerControllerQuerySubtitleEncoding:(NativeAVPlayerController *)controller subtitleCString:(const char *)subtitleCString;
+
+// current subtitle was changed
+- (void)NativeAVPlayerControllerDidSubtitleChange:(NativeAVPlayerController *)controller subtitleItem:(FFAVSubtitleItem *)subtitleItem;
+
 // did finish plaback
 - (void)NativeAVPlayerControllerDidFinishPlayback:(NativeAVPlayerController *)controller;
 
@@ -226,4 +240,20 @@
 // enter or exit full screen mode
 - (void)NativeAVPlayerControllerDidEnterFullScreenMode:(NativeAVPlayerController *)controller;
 - (void)NativeAVPlayerControllerDidExitFullScreenMode:(NativeAVPlayerController *)controller;
+
+// HTTPs authentication challenge  [iOS 8.0 or later]
+
+// Invoked when assistance is required of the application to respond to an authentication challenge.
+// Delegates receive this message when assistance is required of the application to respond to an authentication challenge.
+// If the result is YES, the player expects you to send an appropriate response, either subsequently or immediately,
+// to the NSURLAuthenticationChallenge's sender, i.e. [authenticationChallenge sender],
+// via use of one of the messages defined in the NSURLAuthenticationChallengeSender protocol (see NSAuthenticationChallenge.h).
+// If you intend to respond to the authentication challenge after your handling of -shouldWaitForResponseToAuthenticationChallenge: returns,
+// you must retain the instance of NSURLAuthenticationChallenge until after your response has been made.
+- (BOOL)NativeAVPlayerController:(NativeAVPlayerController *)controller shouldWaitForResponseToAuthenticationChallenge:(NSURLAuthenticationChallenge *)authenticationChallenge;
+
+// Informs the delegate that a prior authentication challenge has been cancelled.
+- (void)NativeAVPlayerController:(NativeAVPlayerController *)controller didCancelAuthenticationChallenge:(NSURLAuthenticationChallenge *)authenticationChallenge;
 @end
+
+NS_ASSUME_NONNULL_END

@@ -539,8 +539,10 @@
     if ([self.mediaURL isFileURL]) {
       [controller seekto:0];
       [controller pause];
+      [self updateProgressViewsWithTimePosition:0];
+    } else {
+      _progressSlider.value = _progressSlider.maximumValue;
     }
-    _progressSlider.value = _progressSlider.maximumValue;
 
     if (_didFinishPlayback) {
       _didFinishPlayback(controller);
@@ -648,6 +650,11 @@
     }
   }
 #endif
+}
+
+// query subtitle's encoding
+- (CFStringEncoding)FFAVPlayerControllerQuerySubtitleEncoding:(FFAVPlayerController *)controller subtitleCString:(const char *)subtitleCString {
+  return kCFStringEncodingGB_18030_2000;
 }
 
 // error handler
@@ -929,17 +936,15 @@
 }
 
 - (void)forwardDidTouch:(id)sender {
-  NSTimeInterval current_time = [_avplayController currentPlaybackTime];
-  NSTimeInterval duration = [_avplayController duration];
-
-  [_avplayController seekto:(current_time / duration + 0.05) * duration];
+  if (_avplayController.currentPlaybackTime+10 < _avplayController.duration) {
+    [_avplayController seekto:_avplayController.currentPlaybackTime+10];
+  }
 }
 
 - (void)rewindDidTouch:(id)sender {
-  NSTimeInterval current_time = [_avplayController currentPlaybackTime];
-  NSTimeInterval duration = [_avplayController duration];
-
-  [_avplayController seekto:(current_time / duration - 0.05) * duration];
+  if (_avplayController.currentPlaybackTime-10 >= 0) {
+    [_avplayController seekto:_avplayController.currentPlaybackTime-10];
+  }
 }
 
 - (void)mutedDidTouch:(id)sender {
@@ -1064,9 +1069,7 @@
                    subtitlePath =
                        [[NSBundle mainBundle] pathForResource:@"test"
                                                        ofType:@"ass"];
-                   if (![_avplayController
-                           openSubtitleFile:subtitlePath
-                                   encoding:kCFStringEncodingGB_18030_2000]) {
+                   if (![_avplayController openSubtitleFile:subtitlePath]) {
                      NSLog(@"Open %@ subtitle file failed!",
                            [subtitlePath lastPathComponent]);
                    }
@@ -1125,14 +1128,10 @@
 
 // Start playback at special time position
 - (void)startPlaybackAt:(NSNumber *)startTimePosition {
-  if (startTimePosition.floatValue == 0) {
-    [_avplayController play:0];
-  } else {
-    double position = startTimePosition.floatValue;
+  NSTimeInterval duration = [_avplayController duration];
 
-    if (![_avplayController play:position]) {
-      [_avplayController play:0];
-    }
+  if (duration > 0 && startTimePosition.floatValue < duration) {
+    [_avplayController play:startTimePosition.floatValue];
   }
 }
 

@@ -12,6 +12,8 @@
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
 
+NS_ASSUME_NONNULL_BEGIN
+
 /**
  * AV player states
  **/
@@ -43,6 +45,13 @@ typedef NS_ENUM(NSInteger, AVDecodingMode) {
   kAVDecodingModeHW,
 };
 
+/*
+ * AV sync mode
+ */
+typedef NS_ENUM(NSInteger, AVSyncMode) {
+  kAVSyncModeAudio = 0, // Default
+  kAVSyncModeVideo = 1
+};
 
 @protocol FFAVPlayerControllerDelegate;
 @class FFAVSubtitleItem;
@@ -53,7 +62,7 @@ typedef NS_ENUM(NSInteger, AVDecodingMode) {
 @interface FFAVPlayerController : NSObject
 
 @property (nonatomic, readonly) NSURL *mediaURL;
-@property (nonatomic, weak) id <FFAVPlayerControllerDelegate> delegate;
+@property (nullable, nonatomic, weak) id <FFAVPlayerControllerDelegate> delegate;
 
 @property (nonatomic, assign) BOOL allowBackgroundPlayback;  // default NO
 @property (nonatomic, assign) BOOL enableBuiltinSubtitleRender; // default YES
@@ -76,10 +85,16 @@ typedef NS_ENUM(NSInteger, AVDecodingMode) {
  * av tracks and the current av track index
  */
 @property (nonatomic, readonly) NSInteger currentAudioTrack;
-@property (nonatomic, strong, readonly) NSArray *audioTracks;
+@property (nullable, nonatomic, strong, readonly) NSArray *audioTracks;
 
 @property (nonatomic, readonly) NSInteger currentSubtitleTrack;
-@property (nonatomic, strong, readonly) NSArray *subtitleTracks;
+@property (nullable, nonatomic, strong, readonly) NSArray *subtitleTracks;
+
+/*
+ * Throttles frequency of the current playback time change notification.
+ * 1s (second) by default.
+ */
+@property (nonatomic, assign) NSTimeInterval throttleCurrentPlaybackTimeChangeNotification;
 
 /*
  * Get/Set the minmum playable buffer size, default size is 0.
@@ -91,7 +106,7 @@ typedef NS_ENUM(NSInteger, AVDecodingMode) {
 /**
  * av codec bitrate and video frame rate
  */
-@property (nonatomic, readonly) NSInteger avBitrate;
+@property (nonatomic, readonly) long long avBitrate;
 @property (nonatomic, readonly) NSInteger avFramerate;
 
 /**
@@ -116,6 +131,12 @@ typedef NS_ENUM(NSInteger, AVDecodingMode) {
  */
 @property (nonatomic, assign) AVDecodingMode decodingMode;
 @property (nonatomic, readonly) BOOL canApplyHWDecoder;
+
+/**
+ * Sync mode
+ * Audio or Video sync mode.
+ */
+@property (nonatomic, assign) AVSyncMode syncMode;
 
 /*
  * Convert ISO 639-1/2B/2T language code to full english name.
@@ -145,12 +166,12 @@ typedef NS_ENUM(NSInteger, AVDecodingMode) {
  * @options - A dictionary filled with AVFormatContext and demuxer-private options.
  * @If failed, return NO, otherwise return YES.
  */
-- (BOOL)openMedia:(NSURL *)url withOptions:(NSDictionary *)options;
+- (BOOL)openMedia:(NSURL *)url withOptions:(nullable NSDictionary *)options;
 
 /*
  * Get drawable view object
  */
-- (UIView *)drawableView;
+- (nullable UIView *)drawableView;
 
 /*
  * Enter or exit full screen mode.
@@ -189,9 +210,8 @@ typedef NS_ENUM(NSInteger, AVDecodingMode) {
 /*
  * Open or close external subtitle file support.
  * @path: subtitle file path.
- * @encoding: encoding of the file.
  */
-- (BOOL)openSubtitleFile:(NSString *)path encoding:(CFStringEncoding)encoding;
+- (BOOL)openSubtitleFile:(NSString *)path;
 - (void)closeSubtitleFile;
 
 /*
@@ -237,7 +257,7 @@ typedef NS_ENUM(NSInteger, AVDecodingMode) {
  * @ti - playback start position (0 ~ duration).
  * @If failed, return NO, otherwise return YES.
  */
-- (BOOL)play:(double)ti;
+- (BOOL)play:(NSTimeInterval)ti;
 
 /*
  * Fast forward & backward.
@@ -267,7 +287,7 @@ typedef NS_ENUM(NSInteger, AVDecodingMode) {
  * @ti - 0 ~ duration.
  * @This function does not return a value.
  */
-- (void)seekto:(double)ti;
+- (void)seekto:(NSTimeInterval)ti;
 
 /*
  * Enable tracking the realtime frame rate changes.
@@ -351,7 +371,7 @@ typedef NS_ENUM(NSInteger, AVDecodingMode) {
 // did load av resource
 // @error: nil indicates that loaded successfully.
 //         non-nil indicates failure.
-- (void)FFAVPlayerControllerDidLoad:(FFAVPlayerController *)controller error:(NSError *)error;
+- (void)FFAVPlayerControllerDidLoad:(FFAVPlayerController *)controller error:(nullable NSError *)error;
 
 // state was changed
 - (void)FFAVPlayerControllerDidStateChange:(FFAVPlayerController *)controller;
@@ -368,6 +388,9 @@ typedef NS_ENUM(NSInteger, AVDecodingMode) {
 // real framerate was changed
 - (void)FFAVPlayerControllerDidFramerateChange:(FFAVPlayerController *)controller framerate:(NSInteger)framerate;
 
+// query subtitle's encoding
+- (CFStringEncoding)FFAVPlayerControllerQuerySubtitleEncoding:(FFAVPlayerController *)controller subtitleCString:(const char *)subtitleCString;
+
 // current subtitle was changed
 - (void)FFAVPlayerControllerDidSubtitleChange:(FFAVPlayerController *)controller subtitleItem:(FFAVSubtitleItem *)subtitleItem;
 
@@ -378,3 +401,5 @@ typedef NS_ENUM(NSInteger, AVDecodingMode) {
 // error handler
 - (void)FFAVPlayerControllerDidOccurError:(FFAVPlayerController *)controller error:(NSError *)error;
 @end
+
+NS_ASSUME_NONNULL_END
